@@ -62,22 +62,16 @@ public:
 	public:
 		static void call(iterator* iter) {
 			iter->func(*iter);
-		}
-		static void exit(iterator* iter) {
 			iter->val.reset();
 		}
 		iterator(std::function<void(Yielder<T>&)>&& f) : Yielder<T>{caller_context, callee_context}, func{std::move(f)} {
     		getcontext(&caller_context);
     		getcontext(&callee_context);
-    		getcontext(&exit_context);
 			callee_context.uc_stack.ss_sp   = stack.data();
 			callee_context.uc_stack.ss_size = stack.size();
-			exit_context.uc_stack.ss_sp     = stack.data();
-			exit_context.uc_stack.ss_size   = stack.size();
-			callee_context.uc_link          = &exit_context;
+            callee_context.uc_link = &caller_context;
 
 			makecontext(&callee_context, reinterpret_cast<void(*)()>(call), 1, this);
-			makecontext(&exit_context, reinterpret_cast<void(*)()>(exit), 1, this);
 			++(*this);
 		}
 
